@@ -152,11 +152,6 @@ export default function AgentThinking({ events, isLoading }: AgentThinkingProps)
     setToolCalls(Object.values(calls))
   }, [events])
 
-  // Don't show if no tool calls and not loading
-  if (toolCalls.length === 0 && !isLoading) {
-    return null
-  }
-
   // Auto-collapse after loading is done
   useEffect(() => {
     if (!isLoading && toolCalls.length > 0) {
@@ -167,6 +162,11 @@ export default function AgentThinking({ events, isLoading }: AgentThinkingProps)
       return () => clearTimeout(timer)
     }
   }, [isLoading, toolCalls.length])
+
+  // Don't show if no tool calls and not loading
+  if (toolCalls.length === 0 && !isLoading) {
+    return null
+  }
 
   return (
     <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 overflow-hidden mb-4">
