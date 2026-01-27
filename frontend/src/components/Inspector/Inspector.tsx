@@ -139,8 +139,8 @@ export default function Inspector({ event }: InspectorProps) {
         </div>
       )}
 
-      {/* UCP Educational Info */}
-      {event.has_ucp && (
+      {/* UCP Educational Info - show when we have educational content */}
+      {(event.title || event.details || event.description) && (
         <div className="bg-purple-50 rounded-lg border border-purple-200 p-4">
           <h3 className="font-medium text-purple-900 mb-2 flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center text-xs font-bold text-purple-700">
