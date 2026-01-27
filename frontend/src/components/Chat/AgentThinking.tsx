@@ -75,12 +75,12 @@ function ToolCallItem({ toolCall, isLast }: { toolCall: ToolCall; isLast: boolea
           {isExpanded && (
             <div className="mt-2 ml-5 space-y-2">
               {/* Tool name and arguments */}
-              <div className="bg-gray-50 rounded-lg p-2 text-xs font-mono">
-                <div className="text-gray-500 mb-1">
+              <div className="bg-gray-800 rounded-lg p-2 text-xs font-mono">
+                <div className="text-gray-400 mb-1">
                   <Wrench className="w-3 h-3 inline mr-1" />
                   {toolCall.name}({Object.keys(toolCall.args).join(', ')})
                 </div>
-                <pre className="text-gray-700 whitespace-pre-wrap overflow-x-auto">
+                <pre className="text-gray-100 whitespace-pre-wrap overflow-x-auto">
                   {JSON.stringify(toolCall.args, null, 2)}
                 </pre>
               </div>
@@ -88,12 +88,12 @@ function ToolCallItem({ toolCall, isLast }: { toolCall: ToolCall; isLast: boolea
               {/* Result if available */}
               {toolCall.result && (
                 <div className={`rounded-lg p-2 text-xs font-mono ${
-                  isSuccess ? 'bg-green-50' : 'bg-red-50'
+                  isSuccess ? 'bg-green-900' : 'bg-red-900'
                 }`}>
-                  <div className={`mb-1 ${isSuccess ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`mb-1 ${isSuccess ? 'text-green-400' : 'text-red-400'}`}>
                     {isSuccess ? '✓ Success' : '✗ Failed'}
                   </div>
-                  <pre className="text-gray-700 whitespace-pre-wrap overflow-x-auto max-h-32 overflow-y-auto">
+                  <pre className="text-gray-100 whitespace-pre-wrap overflow-x-auto max-h-32 overflow-y-auto">
                     {JSON.stringify(toolCall.result.data, null, 2)}
                   </pre>
                 </div>
