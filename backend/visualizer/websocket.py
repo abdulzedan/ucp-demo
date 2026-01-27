@@ -6,7 +6,11 @@ from typing import Set
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from backend.visualizer.events import event_store, format_event_for_display, ProtocolEvent
+from backend.visualizer.events import (
+    ProtocolEvent,
+    event_store,
+    format_event_for_display,
+)
 
 router = APIRouter(tags=["visualizer"])
 
@@ -19,10 +23,12 @@ async def broadcast_event(event: ProtocolEvent) -> None:
     if not connected_clients:
         return
 
-    message = json.dumps({
-        "type": "event",
-        "data": format_event_for_display(event),
-    })
+    message = json.dumps(
+        {
+            "type": "event",
+            "data": format_event_for_display(event),
+        }
+    )
 
     # Send to all clients
     disconnected = set()
@@ -58,18 +64,26 @@ async def websocket_events(websocket: WebSocket) -> None:
 
     try:
         # Send initial state
-        await websocket.send_text(json.dumps({
-            "type": "connected",
-            "message": "Connected to UCP event stream",
-        }))
+        await websocket.send_text(
+            json.dumps(
+                {
+                    "type": "connected",
+                    "message": "Connected to UCP event stream",
+                }
+            )
+        )
 
         # Send recent events
         recent_events = event_store.get_events(limit=20)
         for event in recent_events:
-            await websocket.send_text(json.dumps({
-                "type": "event",
-                "data": format_event_for_display(event),
-            }))
+            await websocket.send_text(
+                json.dumps(
+                    {
+                        "type": "event",
+                        "data": format_event_for_display(event),
+                    }
+                )
+            )
 
         # Keep connection alive
         while True:
@@ -86,19 +100,27 @@ async def websocket_events(websocket: WebSocket) -> None:
                     if message.get("type") == "ping":
                         await websocket.send_text(json.dumps({"type": "pong"}))
                     elif message.get("type") == "get_events":
-                        events = event_store.get_events(
-                            limit=message.get("limit", 50)
+                        events = event_store.get_events(limit=message.get("limit", 50))
+                        await websocket.send_text(
+                            json.dumps(
+                                {
+                                    "type": "events_list",
+                                    "data": [
+                                        format_event_for_display(e) for e in events
+                                    ],
+                                }
+                            )
                         )
-                        await websocket.send_text(json.dumps({
-                            "type": "events_list",
-                            "data": [format_event_for_display(e) for e in events],
-                        }))
                     elif message.get("type") == "clear":
                         event_store.clear()
-                        await websocket.send_text(json.dumps({
-                            "type": "cleared",
-                            "message": "Event store cleared",
-                        }))
+                        await websocket.send_text(
+                            json.dumps(
+                                {
+                                    "type": "cleared",
+                                    "message": "Event store cleared",
+                                }
+                            )
+                        )
                 except json.JSONDecodeError:
                     pass
 

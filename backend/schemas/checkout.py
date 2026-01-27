@@ -1,7 +1,6 @@
 """Checkout capability schemas based on UCP specification."""
 
 from datetime import datetime
-from decimal import Decimal
 from enum import Enum
 from typing import Any
 
@@ -231,12 +230,8 @@ class CheckoutSession(BaseModel):
     messages: list[Message] = Field(
         default_factory=list, description="Messages (errors, warnings, info)"
     )
-    links: list[Link] = Field(
-        default_factory=list, description="Business policy links"
-    )
-    continue_url: str | None = Field(
-        default=None, description="URL for buyer handoff"
-    )
+    links: list[Link] = Field(default_factory=list, description="Business policy links")
+    continue_url: str | None = Field(default=None, description="URL for buyer handoff")
     expires_at: datetime | None = Field(
         default=None, description="Session expiration timestamp"
     )

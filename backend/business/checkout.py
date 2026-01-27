@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, Header, HTTPException
 
 from backend.business.catalog import (
     FULFILLMENT_OPTIONS,
@@ -70,9 +70,7 @@ def calculate_totals(
         for opt in FULFILLMENT_OPTIONS:
             if opt["id"] == fulfillment.selected_option_id:
                 # Check for free shipping discount
-                has_free_shipping = any(
-                    d.code.upper() == "FREESHIP" for d in discounts
-                )
+                has_free_shipping = any(d.code.upper() == "FREESHIP" for d in discounts)
                 if not has_free_shipping:
                     shipping = opt["price"]
                 break
@@ -295,9 +293,7 @@ async def create_checkout(
         selected_option_id=(
             request.fulfillment.selected_option_id if request.fulfillment else None
         ),
-        available_options=[
-            FulfillmentOption(**opt) for opt in FULFILLMENT_OPTIONS
-        ],
+        available_options=[FulfillmentOption(**opt) for opt in FULFILLMENT_OPTIONS],
     )
 
     # Store session
@@ -407,9 +403,7 @@ async def update_checkout(
             type="shipping",
             address=request.fulfillment.address,
             selected_option_id=request.fulfillment.selected_option_id,
-            available_options=[
-                FulfillmentOption(**opt) for opt in FULFILLMENT_OPTIONS
-            ],
+            available_options=[FulfillmentOption(**opt) for opt in FULFILLMENT_OPTIONS],
         )
 
     # Update session

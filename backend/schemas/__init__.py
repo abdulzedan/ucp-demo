@@ -1,23 +1,23 @@
 """UCP Schemas - Pydantic models for Universal Commerce Protocol."""
 
-from backend.schemas.ucp import (
-    UCPVersion,
-    UCPProfile,
-    UCPCapability,
-    UCPService,
-    UCPPaymentHandler,
-)
 from backend.schemas.checkout import (
+    Buyer,
     CheckoutSession,
     CheckoutStatus,
     LineItem,
-    Buyer,
+    Message,
     PostalAddress,
     Total,
-    Message,
 )
 from backend.schemas.discovery import BusinessProfile, PlatformProfile
-from backend.schemas.payment import PaymentInstrument, PaymentCredential
+from backend.schemas.payment import PaymentCredential, PaymentInstrument
+from backend.schemas.ucp import (
+    UCPCapability,
+    UCPPaymentHandler,
+    UCPProfile,
+    UCPService,
+    UCPVersion,
+)
 
 __all__ = [
     # UCP Core

@@ -1,6 +1,5 @@
 """Discovery schemas for UCP profiles."""
 
-from pydantic import BaseModel, Field
 
 from backend.schemas.ucp import (
     SigningKey,

@@ -4,33 +4,32 @@ This client calls the business logic directly instead of making HTTP requests,
 avoiding the self-calling deadlock when running in a single server process.
 """
 
+import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from backend.business.catalog import get_all_products, FULFILLMENT_OPTIONS, get_product, validate_discount_code
+from backend.business.catalog import (
+    FULFILLMENT_OPTIONS,
+    get_all_products,
+    get_product,
+    validate_discount_code,
+)
 from backend.business.checkout import (
-    checkout_sessions,
     build_checkout_response,
+    checkout_sessions,
 )
 from backend.schemas.checkout import (
-    CheckoutSession,
-    CreateCheckoutRequest,
-    UpdateCheckoutRequest,
-    CompleteCheckoutRequest,
-    LineItemRequest,
     Buyer,
+    CheckoutSession,
+    CheckoutStatus,
+    Discount,
     Fulfillment,
     FulfillmentOption,
     LineItem,
-    Discount,
     OrderConfirmation,
-    CheckoutStatus,
     PostalAddress,
 )
-from backend.schemas.discovery import BusinessProfile
 from backend.schemas.ucp import UCPProfile
-
-import uuid
-from datetime import datetime, timedelta, timezone
 
 
 class UCPClient:
@@ -68,23 +67,29 @@ class UCPClient:
             ucp={
                 "version": "2026-01-11",
                 "capabilities": {
-                    "dev.ucp.shopping.checkout": [{
-                        "version": "2026-01-11",
-                        "spec": "https://ucp.dev/specification/checkout",
-                        "schema": "https://ucp.dev/schemas/shopping/checkout.json",
-                    }],
-                    "dev.ucp.shopping.fulfillment": [{
-                        "version": "2026-01-11",
-                        "spec": "https://ucp.dev/specification/fulfillment",
-                        "schema": "https://ucp.dev/schemas/shopping/fulfillment.json",
-                        "extends": "dev.ucp.shopping.checkout",
-                    }],
-                    "dev.ucp.shopping.discount": [{
-                        "version": "2026-01-11",
-                        "spec": "https://ucp.dev/specification/discount",
-                        "schema": "https://ucp.dev/schemas/shopping/discount.json",
-                        "extends": "dev.ucp.shopping.checkout",
-                    }],
+                    "dev.ucp.shopping.checkout": [
+                        {
+                            "version": "2026-01-11",
+                            "spec": "https://ucp.dev/specification/checkout",
+                            "schema": "https://ucp.dev/schemas/shopping/checkout.json",
+                        }
+                    ],
+                    "dev.ucp.shopping.fulfillment": [
+                        {
+                            "version": "2026-01-11",
+                            "spec": "https://ucp.dev/specification/fulfillment",
+                            "schema": "https://ucp.dev/schemas/shopping/fulfillment.json",
+                            "extends": "dev.ucp.shopping.checkout",
+                        }
+                    ],
+                    "dev.ucp.shopping.discount": [
+                        {
+                            "version": "2026-01-11",
+                            "spec": "https://ucp.dev/specification/discount",
+                            "schema": "https://ucp.dev/schemas/shopping/discount.json",
+                            "extends": "dev.ucp.shopping.checkout",
+                        }
+                    ],
                 },
                 "payment_handlers": {
                     "dev.ucp.demo.mock_tokenizer": [
@@ -116,12 +121,14 @@ class UCPClient:
         handlers = []
         for name, handler_list in self._profile.ucp.payment_handlers.items():
             for handler in handler_list:
-                handlers.append({
-                    "name": name,
-                    "id": handler.id,
-                    "version": handler.version,
-                    "config": handler.config,
-                })
+                handlers.append(
+                    {
+                        "name": name,
+                        "id": handler.id,
+                        "version": handler.version,
+                        "config": handler.config,
+                    }
+                )
         return handlers
 
     def get_products(self) -> list[dict]:
@@ -164,7 +171,7 @@ class UCPClient:
 
         # Process discounts
         discounts: list[Discount] = []
-        for code in (discount_codes or []):
+        for code in discount_codes or []:
             discount_info = validate_discount_code(code)
             if discount_info:
                 subtotal = sum(item.total_price for item in processed_items)
@@ -186,8 +193,12 @@ class UCPClient:
         # Build fulfillment
         fulfillment_obj = Fulfillment(
             type="shipping",
-            address=PostalAddress(**fulfillment["address"]) if fulfillment and fulfillment.get("address") else None,
-            selected_option_id=fulfillment.get("selected_option_id") if fulfillment else None,
+            address=PostalAddress(**fulfillment["address"])
+            if fulfillment and fulfillment.get("address")
+            else None,
+            selected_option_id=fulfillment.get("selected_option_id")
+            if fulfillment
+            else None,
             available_options=[FulfillmentOption(**opt) for opt in FULFILLMENT_OPTIONS],
         )
 
@@ -231,7 +242,7 @@ class UCPClient:
 
         # Process line items
         processed_items: list[LineItem] = []
-        for item in (line_items or []):
+        for item in line_items or []:
             product = get_product(item["product_id"])
             if product is None:
                 raise ValueError(f"Product not found: {item['product_id']}")
@@ -253,7 +264,7 @@ class UCPClient:
 
         # Process discounts
         discounts: list[Discount] = []
-        for code in (discount_codes or []):
+        for code in discount_codes or []:
             discount_info = validate_discount_code(code)
             if discount_info:
                 subtotal = sum(item.total_price for item in processed_items)
@@ -277,19 +288,25 @@ class UCPClient:
         if fulfillment:
             fulfillment_obj = Fulfillment(
                 type="shipping",
-                address=PostalAddress(**fulfillment["address"]) if fulfillment.get("address") else None,
+                address=PostalAddress(**fulfillment["address"])
+                if fulfillment.get("address")
+                else None,
                 selected_option_id=fulfillment.get("selected_option_id"),
-                available_options=[FulfillmentOption(**opt) for opt in FULFILLMENT_OPTIONS],
+                available_options=[
+                    FulfillmentOption(**opt) for opt in FULFILLMENT_OPTIONS
+                ],
             )
 
         # Update session
-        session_data.update({
-            "line_items": processed_items,
-            "buyer": Buyer(**buyer) if buyer else None,
-            "fulfillment": fulfillment_obj,
-            "discounts": discounts,
-            "updated_at": now,
-        })
+        session_data.update(
+            {
+                "line_items": processed_items,
+                "buyer": Buyer(**buyer) if buyer else None,
+                "fulfillment": fulfillment_obj,
+                "discounts": discounts,
+                "updated_at": now,
+            }
+        )
 
         return build_checkout_response(session_data)
 
@@ -314,11 +331,13 @@ class UCPClient:
         )
 
         # Update session
-        session_data.update({
-            "status": CheckoutStatus.COMPLETED,
-            "order": order,
-            "updated_at": now,
-        })
+        session_data.update(
+            {
+                "status": CheckoutStatus.COMPLETED,
+                "order": order,
+                "updated_at": now,
+            }
+        )
 
         return build_checkout_response(session_data)
 
@@ -330,10 +349,12 @@ class UCPClient:
         session_data = checkout_sessions[session_id]
         now = datetime.now(timezone.utc)
 
-        session_data.update({
-            "status": CheckoutStatus.CANCELED,
-            "updated_at": now,
-        })
+        session_data.update(
+            {
+                "status": CheckoutStatus.CANCELED,
+                "updated_at": now,
+            }
+        )
 
         return build_checkout_response(session_data)
 
@@ -346,7 +367,9 @@ class UCPClient:
         return {
             "token": f"tok_{uuid.uuid4().hex[:16]}",
             "type": "TOKEN",
-            "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat(),
+            "expires_at": (
+                datetime.now(timezone.utc) + timedelta(minutes=15)
+            ).isoformat(),
         }
 
     # Async wrappers for backwards compatibility

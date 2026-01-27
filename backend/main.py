@@ -11,19 +11,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-# Load environment variables
-load_dotenv()
-
 from backend.business.server import router as business_router
 from backend.platform.chat import router as platform_router
-from backend.visualizer.websocket import router as visualizer_router
 from backend.visualizer.events import (
-    event_store,
+    EventType,
     capture_request,
     capture_response,
-    EventType,
-    format_event_for_display,
 )
+from backend.visualizer.websocket import router as visualizer_router
+
+# Load environment variables
+load_dotenv()
 
 
 def get_event_type(path: str, method: str) -> EventType | None:
@@ -108,7 +106,7 @@ async def lifespan(app: FastAPI):
     print("=" * 60)
     print("UCP Demo Server Starting...")
     print(f"Business: {os.getenv('BUSINESS_NAME', 'Cymbal Coffee Shop')}")
-    print(f"Discovery endpoint: http://localhost:8000/.well-known/ucp")
+    print("Discovery endpoint: http://localhost:8000/.well-known/ucp")
     print("=" * 60)
     yield
     # Shutdown

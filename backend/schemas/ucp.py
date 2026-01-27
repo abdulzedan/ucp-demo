@@ -1,6 +1,5 @@
 """Core UCP schema types based on the official UCP specification."""
 
-from datetime import date
 from enum import Enum
 from typing import Any
 
@@ -78,9 +77,7 @@ class UCPPaymentHandler(BaseModel):
         pattern=r"^\d{4}-\d{2}-\d{2}$",
         description="Handler version",
     )
-    spec: str | None = Field(
-        default=None, description="URL to handler specification"
-    )
+    spec: str | None = Field(default=None, description="URL to handler specification")
     schema_url: str | None = Field(
         default=None, alias="schema", description="URL to handler schema"
     )

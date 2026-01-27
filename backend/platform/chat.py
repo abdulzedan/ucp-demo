@@ -7,7 +7,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from backend.platform.agent import ShoppingAgent, _reset_emitted_events
-from backend.schemas.checkout import CheckoutSession
 from backend.visualizer.events import event_store
 
 logger = logging.getLogger(__name__)
@@ -62,7 +61,9 @@ async def chat(request: ChatRequest) -> ChatResponse:
     agent = get_agent(request.session_id)
 
     try:
-        response, products = await agent.chat_with_products(request.message, request.session_id)
+        response, products = await agent.chat_with_products(
+            request.message, request.session_id
+        )
 
         product_displays = None
         show_products = False

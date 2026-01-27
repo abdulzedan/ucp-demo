@@ -1,10 +1,10 @@
 """Protocol event capture and formatting."""
 
 import json
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
-from dataclasses import dataclass, field, asdict
 
 
 class EventType(str, Enum):

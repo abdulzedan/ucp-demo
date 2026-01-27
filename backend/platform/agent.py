@@ -19,11 +19,11 @@ from google.genai import types
 from backend.platform.ucp_client import UCPClient
 from backend.schemas.checkout import CheckoutStatus
 from backend.visualizer.events import (
-    capture_request,
-    capture_response,
+    EventType,
     capture_agent_tool_call,
     capture_agent_tool_result,
-    EventType,
+    capture_request,
+    capture_response,
 )
 
 # State keys following ADK patterns (prefix with user: for session-scoped data)
@@ -45,9 +45,17 @@ _ucp_client: UCPClient | None = None
 _emitted_events: set[str] = set()
 
 
-def _emit_event(event_type: EventType, method: str, path: str, request_body: dict | None = None, response_body: dict | None = None, status_code: int = 200) -> None:
+def _emit_event(
+    event_type: EventType,
+    method: str,
+    path: str,
+    request_body: dict | None = None,
+    response_body: dict | None = None,
+    status_code: int = 200,
+) -> None:
     """Emit a protocol event for visualization."""
     import time
+
     start = time.time()
     request_id = capture_request(
         event_type=event_type,
@@ -149,12 +157,14 @@ def show_menu(tool_context: ToolContext) -> dict:
         # Format products for display
         product_list = []
         for p in products:
-            product_list.append({
-                "id": p["id"],
-                "title": p["title"],
-                "description": p.get("description"),
-                "price": f"${p['price'] / 100:.2f}",
-            })
+            product_list.append(
+                {
+                    "id": p["id"],
+                    "title": p["title"],
+                    "description": p.get("description"),
+                    "price": f"${p['price'] / 100:.2f}",
+                }
+            )
 
         return {
             UCP_PRODUCTS_KEY: products,  # Full data for UI
@@ -208,8 +218,7 @@ def add_to_cart(
         item_map[product_id] = item_map.get(product_id, 0) + quantity
 
         merged_items = [
-            {"product_id": pid, "quantity": qty}
-            for pid, qty in item_map.items()
+            {"product_id": pid, "quantity": qty} for pid, qty in item_map.items()
         ]
 
         # Create or update checkout
@@ -250,7 +259,9 @@ def add_to_cart(
                 }
                 for li in checkout.line_items
             ],
-            "subtotal": f"${checkout.totals.subtotal / 100:.2f}" if checkout.totals else None,
+            "subtotal": f"${checkout.totals.subtotal / 100:.2f}"
+            if checkout.totals
+            else None,
         }
 
         # Include available shipping options dynamically from checkout
@@ -352,8 +363,7 @@ def view_cart(tool_context: ToolContext) -> dict:
 
     if checkout.messages:
         result["messages"] = [
-            {"type": m.type.value, "content": m.content}
-            for m in checkout.messages
+            {"type": m.type.value, "content": m.content} for m in checkout.messages
         ]
 
     return result
@@ -377,7 +387,9 @@ def select_shipping(tool_context: ToolContext, option_id: str) -> dict:
     checkout_id = tool_context.state.get(ADK_USER_CHECKOUT_ID)
 
     if not checkout_id:
-        return _create_error_response("No active checkout. Add items to your cart first.")
+        return _create_error_response(
+            "No active checkout. Add items to your cart first."
+        )
 
     try:
         client = _get_ucp_client()
@@ -429,10 +441,18 @@ def select_shipping(tool_context: ToolContext, option_id: str) -> dict:
             UCP_CHECKOUT_KEY: checkout.model_dump(mode="json"),
             "status": "success",
             "selected_option": option_id,
-            "selected_option_title": selected_option.title if selected_option else option_id,
-            "selected_option_delivery": selected_option.estimated_delivery if selected_option else None,
-            "shipping_cost": f"${checkout.totals.shipping / 100:.2f}" if checkout.totals else None,
-            "new_total": f"${checkout.totals.total / 100:.2f}" if checkout.totals else None,
+            "selected_option_title": selected_option.title
+            if selected_option
+            else option_id,
+            "selected_option_delivery": selected_option.estimated_delivery
+            if selected_option
+            else None,
+            "shipping_cost": f"${checkout.totals.shipping / 100:.2f}"
+            if checkout.totals
+            else None,
+            "new_total": f"${checkout.totals.total / 100:.2f}"
+            if checkout.totals
+            else None,
             "checkout_status": checkout.status.value,
         }
 
@@ -465,7 +485,10 @@ def apply_discount(tool_context: ToolContext, code: str) -> dict:
         # Check if already applied
         existing_codes = [d.code for d in current.discounts]
         if code.upper() in [c.upper() for c in existing_codes]:
-            return {"status": "already_applied", "message": f"Code {code} already applied"}
+            return {
+                "status": "already_applied",
+                "message": f"Code {code} already applied",
+            }
 
         # Update with new discount code
         checkout = client.update_checkout(
@@ -476,8 +499,12 @@ def apply_discount(tool_context: ToolContext, code: str) -> dict:
             ],
             fulfillment={
                 "selected_option_id": current.fulfillment.selected_option_id,
-                "address": current.fulfillment.address.model_dump() if current.fulfillment.address else None,
-            } if current.fulfillment else None,
+                "address": current.fulfillment.address.model_dump()
+                if current.fulfillment.address
+                else None,
+            }
+            if current.fulfillment
+            else None,
             discount_codes=existing_codes + [code],
         )
 
@@ -501,7 +528,9 @@ def apply_discount(tool_context: ToolContext, code: str) -> dict:
                     "title": applied[0].title,
                     "amount": f"${applied[0].amount / 100:.2f}",
                 },
-                "new_total": f"${checkout.totals.total / 100:.2f}" if checkout.totals else None,
+                "new_total": f"${checkout.totals.total / 100:.2f}"
+                if checkout.totals
+                else None,
             }
         else:
             return {"status": "invalid", "message": f"Code {code} is not valid"}
@@ -541,7 +570,9 @@ def complete_checkout(tool_context: ToolContext) -> dict:
             return {
                 "error": "Checkout is not ready to complete",
                 "status": current.status.value,
-                "messages": [m.content for m in current.messages if m.type.value == "error"],
+                "messages": [
+                    m.content for m in current.messages if m.type.value == "error"
+                ],
             }
 
         # Get a mock payment token
@@ -599,7 +630,9 @@ def complete_checkout(tool_context: ToolContext) -> dict:
                 "id": checkout.order.id if checkout.order else None,
                 "url": checkout.order.permalink_url if checkout.order else None,
             },
-            "total_charged": f"${checkout.totals.total / 100:.2f}" if checkout.totals else None,
+            "total_charged": f"${checkout.totals.total / 100:.2f}"
+            if checkout.totals
+            else None,
         }
 
     except Exception:
@@ -687,7 +720,9 @@ def after_tool_modifier(
         capture_agent_tool_result(
             tool_call_id=_current_tool_call_id,
             tool_name=tool_name,
-            result=result_summary if result_summary else {"raw": str(tool_response)[:200]},
+            result=result_summary
+            if result_summary
+            else {"raw": str(tool_response)[:200]},
             success=tool_response.get("status") != "error",
         )
         _current_tool_call_id = None
@@ -701,7 +736,9 @@ def after_tool_modifier(
     return None
 
 
-def modify_output_after_agent(callback_context: CallbackContext) -> types.Content | None:
+def modify_output_after_agent(
+    callback_context: CallbackContext,
+) -> types.Content | None:
     """Modify the agent's output before returning to the user.
 
     Adds UCP tool responses as structured output.
@@ -893,15 +930,15 @@ class ShoppingAgentService:
             data_found = False
 
             for final_event in final_events:
-                if not hasattr(final_event, 'content') or not final_event.content:
+                if not hasattr(final_event, "content") or not final_event.content:
                     continue
 
                 for part in final_event.content.parts:
                     # Check for function_response with data
-                    if hasattr(part, 'function_response') and part.function_response:
+                    if hasattr(part, "function_response") and part.function_response:
                         fr = part.function_response
-                        if hasattr(fr, 'response') and fr.response:
-                            result = fr.response.get('result', fr.response)
+                        if hasattr(fr, "response") and fr.response:
+                            result = fr.response.get("result", fr.response)
                             if isinstance(result, dict):
                                 data_found = True
                                 # Extract products if present
@@ -909,7 +946,7 @@ class ShoppingAgentService:
                                     products = result[UCP_PRODUCTS_KEY]
 
                     # Extract text content
-                    if hasattr(part, 'text') and part.text:
+                    if hasattr(part, "text") and part.text:
                         response_text += part.text
 
             # If we have a response, return it
@@ -922,7 +959,7 @@ class ShoppingAgentService:
 
             return "I'm here to help! Try saying 'show menu' to see our products.", None
 
-        except Exception as e:
+        except Exception:
             logger.exception("Error in agent chat")
             return await self._fallback_chat(message)
 
@@ -934,9 +971,13 @@ class ShoppingAgentService:
         if any(word in msg_lower for word in ["menu", "products", "browse", "show"]):
             if not self._products:
                 await self.initialize()
-            return "Here's our menu! Click on any item to add it to your cart.", self._products
+            return (
+                "Here's our menu! Click on any item to add it to your cart.",
+                self._products,
+            )
 
-        return """Hi! I'm your Cymbal Coffee Shop assistant. Here's what I can do:
+        return (
+            """Hi! I'm your Cymbal Coffee Shop assistant. Here's what I can do:
 
 - **Show menu** - See all our drinks and food
 - **Add items** - "Add a latte to my cart"
@@ -944,7 +985,9 @@ class ShoppingAgentService:
 - **Select shipping** - "Pickup", "Standard", or "Express"
 - **Checkout** - Complete your order
 
-What would you like today?""", None
+What would you like today?""",
+            None,
+        )
 
     async def chat(self, message: str, session_id: str = "default") -> str:
         """Process a chat message and return a response.
