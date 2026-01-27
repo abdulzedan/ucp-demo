@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { ShoppingCart, Package, Truck, Tag, CreditCard, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { ShoppingCart, Package, Truck, Tag, CreditCard, CheckCircle, ChevronDown, ChevronUp, Plus, Minus, MapPin } from 'lucide-react'
 import { CheckoutSession } from '../../types/ucp'
 
 interface CheckoutCardProps {
   checkout: CheckoutSession
   onCompleteCheckout?: () => void
+  onUpdateQuantity?: (productId: string, quantity: number) => void
+  onSelectShipping?: (optionId: string) => void
 }
 
 function formatCurrency(amount: number, currency: string = 'USD'): string {
@@ -28,10 +30,12 @@ function getStatusBadge(status: string) {
   )
 }
 
-export default function CheckoutCard({ checkout, onCompleteCheckout }: CheckoutCardProps) {
+export default function CheckoutCard({ checkout, onCompleteCheckout, onUpdateQuantity, onSelectShipping }: CheckoutCardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const isCompleted = checkout.status === 'completed'
   const isReady = checkout.status === 'ready_for_complete'
+  const hasShippingSelected = !!checkout.fulfillment?.selected_option_id
+  const availableShippingOptions = checkout.fulfillment?.available_options || []
 
   return (
     <div className="mt-3 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden max-w-md">
@@ -84,7 +88,26 @@ export default function CheckoutCard({ checkout, onCompleteCheckout }: CheckoutC
                 )}
                 <div className="flex-grow min-w-0">
                   <p className="font-medium text-gray-900 text-sm truncate">{item.title}</p>
-                  <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                  {/* Quantity controls */}
+                  {onUpdateQuantity && !isCompleted ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        onClick={() => onUpdateQuantity(item.product_id, Math.max(0, item.quantity - 1))}
+                        className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <span className="text-sm font-medium text-gray-700 w-6 text-center">{item.quantity}</span>
+                      <button
+                        onClick={() => onUpdateQuantity(item.product_id, item.quantity + 1)}
+                        className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                  )}
                 </div>
                 <p className="text-sm font-medium text-gray-900">
                   {formatCurrency(item.total_price, item.currency)}
@@ -93,20 +116,66 @@ export default function CheckoutCard({ checkout, onCompleteCheckout }: CheckoutC
             ))}
           </div>
 
-          {/* Fulfillment */}
-          {checkout.fulfillment?.selected_option_id && (
+          {/* Shipping Options Selector */}
+          {!hasShippingSelected && availableShippingOptions.length > 0 && onSelectShipping && !isCompleted && (
+            <div className="px-4 py-3 border-t border-gray-100">
+              <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                Select Delivery Option
+              </p>
+              <div className="space-y-2">
+                {availableShippingOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => onSelectShipping(option.id)}
+                    className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      {option.id === 'pickup' ? (
+                        <Package className="w-5 h-5 text-gray-400" />
+                      ) : (
+                        <Truck className="w-5 h-5 text-gray-400" />
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{option.title}</p>
+                        {option.estimated_delivery && (
+                          <p className="text-xs text-gray-500">{option.estimated_delivery}</p>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">
+                      {option.price === 0 ? 'Free' : formatCurrency(option.price, option.currency)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Selected Fulfillment */}
+          {hasShippingSelected && (
             <div className="px-4 py-2 border-t border-gray-100">
-              <div className="flex items-center gap-2 text-sm">
-                {checkout.fulfillment.selected_option_id === 'pickup' ? (
-                  <Package className="w-4 h-4 text-gray-400" />
-                ) : (
-                  <Truck className="w-4 h-4 text-gray-400" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  {checkout.fulfillment?.selected_option_id === 'pickup' ? (
+                    <Package className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <Truck className="w-4 h-4 text-green-500" />
+                  )}
+                  <span className="text-gray-700 font-medium">
+                    {checkout.fulfillment?.available_options.find(
+                      o => o.id === checkout.fulfillment?.selected_option_id
+                    )?.title || checkout.fulfillment?.selected_option_id}
+                  </span>
+                </div>
+                {onSelectShipping && !isCompleted && (
+                  <button
+                    onClick={() => {/* Could add change option functionality */}}
+                    className="text-xs text-blue-500 hover:text-blue-700"
+                  >
+                    Change
+                  </button>
                 )}
-                <span className="text-gray-600">
-                  {checkout.fulfillment.available_options.find(
-                    o => o.id === checkout.fulfillment?.selected_option_id
-                  )?.title || checkout.fulfillment.selected_option_id}
-                </span>
               </div>
             </div>
           )}

@@ -50,9 +50,11 @@ interface MessageBubbleProps {
   message: ChatMessage
   onAddToCart?: (productId: string) => void
   onCompleteCheckout?: () => void
+  onUpdateQuantity?: (productId: string, quantity: number) => void
+  onSelectShipping?: (optionId: string) => void
 }
 
-function MessageBubble({ message, onAddToCart, onCompleteCheckout }: MessageBubbleProps) {
+function MessageBubble({ message, onAddToCart, onCompleteCheckout, onUpdateQuantity, onSelectShipping }: MessageBubbleProps) {
   const isUser = message.role === 'user'
 
   return (
@@ -120,6 +122,8 @@ function MessageBubble({ message, onAddToCart, onCompleteCheckout }: MessageBubb
             onCompleteCheckout={
               message.checkout.status === 'ready_for_complete' ? onCompleteCheckout : undefined
             }
+            onUpdateQuantity={onUpdateQuantity}
+            onSelectShipping={onSelectShipping}
           />
         )}
       </div>
@@ -181,6 +185,20 @@ export default function Chat({ onCheckoutUpdate, events = [] }: ChatProps) {
     await sendMessage('Complete my order')
   }
 
+  const handleUpdateQuantity = async (productId: string, quantity: number) => {
+    if (isLoading) return
+    if (quantity === 0) {
+      await sendMessage(`Remove ${productId} from my cart`)
+    } else {
+      await sendMessage(`Set ${productId} quantity to ${quantity}`)
+    }
+  }
+
+  const handleSelectShipping = async (optionId: string) => {
+    if (isLoading) return
+    await sendMessage(`Select ${optionId} shipping`)
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Chat Header */}
@@ -240,6 +258,8 @@ export default function Chat({ onCheckoutUpdate, events = [] }: ChatProps) {
             message={message}
             onAddToCart={handleAddToCart}
             onCompleteCheckout={handleCompleteCheckout}
+            onUpdateQuantity={handleUpdateQuantity}
+            onSelectShipping={handleSelectShipping}
           />
         ))}
         {/* Agent Thinking Panel - shows tool calls while processing */}
