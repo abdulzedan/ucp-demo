@@ -9,7 +9,7 @@ interface CheckoutCardProps {
   onSelectShipping?: (optionId: string) => void
 }
 
-function formatCurrency(amount: number, currency: string = 'USD'): string {
+function formatCurrency(amount: number, _currency: string = 'USD'): string {
   return `$${(amount / 100).toFixed(2)}`
 }
 

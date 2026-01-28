@@ -8,16 +8,6 @@ interface ChatResponse {
   show_products?: boolean
 }
 
-// Helper to check if checkout has changed meaningfully
-function hasCheckoutChanged(prev?: CheckoutSession, next?: CheckoutSession): boolean {
-  if (!prev && !next) return false
-  if (!prev || !next) return true
-  return prev.id !== next.id ||
-         prev.status !== next.status ||
-         prev.line_items.length !== next.line_items.length ||
-         prev.totals?.total !== next.totals?.total
-}
-
 interface UseChatReturn {
   messages: ChatMessage[]
   isLoading: boolean

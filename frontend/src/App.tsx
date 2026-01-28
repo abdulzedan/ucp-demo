@@ -4,13 +4,12 @@ import Chat from './components/Chat/Chat'
 import Visualizer from './components/Visualizer/Visualizer'
 import FlowDiagram from './components/FlowDiagram/FlowDiagram'
 import Inspector from './components/Inspector/Inspector'
-import Learn from './components/Learn/Learn'
 import { ProtocolEvent, CheckoutSession } from './types/ucp'
 import { useWebSocket } from './hooks/useWebSocket'
 
 const queryClient = new QueryClient()
 
-type Tab = 'visualizer' | 'flow' | 'inspector' | 'learn'
+type Tab = 'visualizer' | 'flow' | 'inspector'
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<Tab>('visualizer')
@@ -119,16 +118,6 @@ function AppContent() {
             >
               Inspector
             </button>
-            <button
-              onClick={() => setActiveTab('learn')}
-              className={`px-4 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'learn'
-                  ? 'text-purple-600 border-b-2 border-purple-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Learn UCP
-            </button>
           </div>
 
           {/* Tab Content */}
@@ -148,9 +137,6 @@ function AppContent() {
               <Inspector
                 event={selectedEvent}
               />
-            )}
-            {activeTab === 'learn' && (
-              <Learn />
             )}
           </div>
         </div>
