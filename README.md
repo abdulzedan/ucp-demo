@@ -4,10 +4,7 @@ An interactive demonstration of the **Universal Commerce Protocol (UCP)** - an o
 
 ## Demo Video
 
-<video controls autoplay muted loop playsinline width="100%">
-  <source src="https://raw.githubusercontent.com/abdulzedan/ucp-demo/main/docs/demo_vid.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+https://github.com/user-attachments/assets/89e25f1f-fba3-48a8-8978-66459320c888
 
 ## What is UCP?
 
